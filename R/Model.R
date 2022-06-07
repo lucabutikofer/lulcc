@@ -285,6 +285,135 @@ setMethod("OrderedModel", signature(obs = "ObsLulcRasterStack", ef = "ExpVarRast
     params <- list()
 }
 
+
+#' Create an OrderedModelPred object
+#'
+#' Methods to create a \code{OrderedModelPred} object to supply to
+#' \code{\link{allocate}}.
+#'
+#' The \code{params} argument is a list of parameter values which should contain
+#' the following components:
+#' 
+#' \describe{
+#'   \item{\code{max.diff}}{The maximum allowed difference between allocated and
+#'     demanded area of any land use type. Default is 5}
+#' }
+#' 
+#' @param obs an ObsLulcRasterStack object
+#' @param ef an ExpVarRasterList object
+#' @param time numeric vector containing timesteps over which simulation will
+#'   occur  
+#' @param prediction model predictions as matrix, rows in the same order as
+#'   non-NA cells in land-use raster. >> Change this to new class
+#'   PredLulcRasterStack.
+#' @param demand matrix with demand for each land use category in terms of number
+#'   of cells to be allocated. The first row should be the number of cells
+#'   allocated to the initial observed land use map (i.e. the land use map for
+#'   time 0)
+#' @param hist RasterLayer containing land use history (values represent the
+#'   number of years the cell has contained the current land use category)
+#' @param mask RasterLayer containing binary values where 0 indicates cells
+#'   that are not allowed to change
+#' @param neighb an object of class NeighbRasterStack
+#' @param rules matrix with land use change decision rules
+#' @param nb.rules numeric with neighbourhood decision rules
+#' @param order numeric vector of land use categories in the order that change
+#'   should be allocated. See Details
+#' @param params list with model parameters
+#' @param output either a RasterStack containing output maps or NULL
+#' @param \dots additional arguments (none)
+#'
+#' @seealso \code{\link{OrderedModelPred-class}}, \code{\link{allocate}}
+#'
+#' @return An OrderedModelPred object.
+#'
+#' @export
+#' @rdname OrderedModelPred
+#'
+#' @references
+#' Fuchs, R., Herold, M., Verburg, P.H., and Clevers, J.G.P.W. (2013). A
+#' high-resolution and harmonized model approach for reconstructing and analysing
+#' historic land changes in Europe, Biogeosciences, 10:1543-1559.
+#'
+#' @examples
+#'
+#' ## see lulcc-package examples
+
+setGeneric("OrderedModelPred", function(obs, ef, prediction, ...)
+  standardGeneric("OrderedModelPred"))
+
+#' @rdname OrderedModelPred
+#' @aliases OrderedModelPred,ObsLulcRasterStack,ExpVarRasterList,PredictiveModelList-method
+setMethod("OrderedModelPred", signature(obs = "ObsLulcRasterStack", ef = "ExpVarRasterList"),
+          function(obs, ef, time, demand, hist, mask, neighb=NULL, rules=NULL, nb.rules=NULL, order, params, output=NULL, ...) {
+            
+            ## check x and models refer to the same categories
+            if (!all(obs@categories == models@categories)) {
+              stop("'models' does not correspond with land use categories in 'obs'")
+            }
+            
+            ## check dimensions of demand and time
+            if (ncol(demand) != length(obs@categories)) {
+              stop("number of columns in 'demand' must equal number of land use categories")
+            }              
+            if (nrow(demand) != length(time)) {
+              stop("number of rows in 'demand' must equal number of timesteps in 't'")
+            }
+            
+            ## check whether hist and mask exist and have correct extent
+            if (missing(hist)) {
+              hist <- obs[[1]]
+              hist[!is.na(hist)] <- 1
+            } 
+            
+            if (missing(mask)) {
+              mask <- obs[[1]]
+              mask[!is.na(mask)] <- 1
+            } 
+            
+            ## create neighbourhood maps if required and check dimensions of nb.rules
+            if (!is.null(neighb)) {
+              if (!is(neighb, "NeighbRasterStack")) stop("'neighb' should be an object of class 'NeighbRasterStack'")
+              ## recalculate neighbourhood for initial observed map
+              neighb <- NeighbRasterStack(x=obs[[1]], neighb=neighb)                  
+            }
+            
+            if (!is.null(rules)) {
+              if (!all(dim(rules) %in% length(obs@categories))) {
+                stop("'rules' must be square matrix with dimensions equal to number of land use categories")
+              }
+            } 
+            
+            if (!is.null(neighb) && !is.null(nb.rules)) {
+              if (length(nb.rules) != length(neighb)) {
+                stop("rule should be provided for each neighbourhood map")
+              }
+              
+            } else if (is.null(neighb) && !is.null(nb.rules)) {
+              warning("neighb is NULL: neighbourhood decision rules not implemented")
+              nb.rules <- NULL
+            }
+            
+            if (missing(order)) {
+              stop("missing argument 'order'")
+            } else {
+              if (!all(order %in% obs@categories)) {
+                stop("argument 'order' should contain exactly the same categories as categories (but not necessarily in the same order)")
+              }
+            }
+            
+            if (missing(params)) {
+              params <- .checkOrderedParams()
+            } else {
+              params <- .checkOrderedParams(params)
+            }
+            
+            out <- new("OrderedModelPred", obs=obs, ef=ef, models=models, time=time, demand=demand, hist=hist, mask=mask, neighb=neighb, rules=rules, nb.rules=nb.rules, order=order, params=params, categories=obs@categories, labels=obs@labels, output=output)
+            
+          }
+)
+
+
 ##     if (missing(params) || length(params) == 0) {
 ##         params <- list(max.diff=5)
 ##     } else {

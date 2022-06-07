@@ -149,6 +149,61 @@ setMethod("allocate", signature(model = "OrderedModel"),
           }
 )
 
+#' @rdname allocate
+#' @aliases allocate,OrderedModel-method
+setMethod("allocate", signature(model = "OrderedModelPred"),
+          function(model, stochastic=TRUE, ...) {
+            map0 <- model@obs[[1]]
+            cells <- which(!is.na(raster::getValues(map0)))
+            map0.vals <- raster::extract(map0, cells)
+            if (!is.null(model@hist)) hist.vals <- raster::extract(model@hist, cells) else NULL
+            if (!is.null(model@mask)) mask.vals <- raster::extract(model@mask, cells) else NULL
+            newdata <- as.data.frame(x=model@ef, obs=model@obs, cells=cells)
+            prob <- model@predictions
+            maps <- raster::stack(map0)
+            
+            for (i in 1:(nrow(model@demand) - 1)) {
+              
+              d <- model@demand[(i+1),]
+              
+              ## 1. update land use suitability matrix if dynamic factors exist
+              if (model@ef@dynamic && i > 1) {
+                newdata <- .update.data.frame(x=newdata, y=model@ef, map=map0, cells=cells, timestep=(i-1))
+                prob <- predict(object=model@models, newdata=newdata)
+              }
+              tprob <- prob
+              
+              ## 2. implement neighbourhood decision rules
+              tprob <- .applyNeighbDecisionRules(model=model, x=map0, tprob=tprob)
+              
+              ## 3. implement other decision rules
+              cd <- d - model@demand[i,] ## change direction
+              tprob <- .applyDecisionRules(model=model, x=map0.vals, hist=hist.vals, cd=cd, tprob=tprob)
+              
+              ## 4. make automatic conversions if necessary
+              auto <- .autoConvert(x=map0.vals, prob=tprob, categories=model@categories, mask=mask.vals)
+              map0.vals[auto$ix] <- auto$vals
+              tprob[auto$ix,] <- NA
+              
+              ## 5. allocation
+              map1.vals <- do.call(.ordered, c(list(tprob=tprob, map0.vals=map0.vals, demand=d, categories=model@categories, order=model@order, stochastic=stochastic), model@params))
+              map1 <- raster::raster(map0, ...) 
+              map1[cells] <- map1.vals
+              maps <- raster::stack(maps, map1)
+              
+              ## 6. prepare model for next timestep
+              if (i < nrow(model@demand)) {
+                if (!is.null(model@hist)) hist.vals <- .updatehist(map0.vals, map1.vals, hist.vals) 
+                map0 <- map1
+                map0.vals <- map1.vals 
+              }
+            }
+            
+            model@output <- maps
+            model     
+          }
+)
+
 #' @useDynLib lulcc
 .clues <- function(tprob, map0.vals, demand, categories, jitter.f, scale.f, max.iter, max.diff, ave.diff) {
     map1.vals <- .Call("allocateclues", tprob, map0.vals, demand, categories, jitter.f, scale.f, max.iter, max.diff, ave.diff)

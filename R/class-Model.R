@@ -115,3 +115,52 @@ setClass("OrderedModel",
              return(TRUE)
          }
 )         
+
+
+#' Class OrderedModelPred
+#'
+#' An S4 class to represent inputs to the Ordered allocation procedure
+#' where the predictions are already computed.
+#' 
+#' @slot obs an ObsLulcRasterStack object 
+#' @slot ef an ExpVarRasterList object
+#' @slot time numeric vector of timesteps over which simulation will occur
+#' @slot demand matrix containing demand scenario
+#' @slot hist RasterLayer showing land use history or NULL
+#' @slot mask RasterLayer showing masked areas or NULL
+#' @slot neighb NeighbRasterStack object or NULL
+#' @slot categories numeric vector of land use categories 
+#' @slot labels character vector corresponding to \code{categories}
+#' @slot rules matrix with land use change decision rules
+#' @slot nb.rules numeric with neighbourhood decision rules
+#' @slot order numeric vector of land use categories in the order that change
+#'   should be allocated
+#' @slot params list with model parameters
+#' @slot output RasterStack containing simulated land use maps or NULL
+#' @slot predictions matrix of land-use probabilities. Land-use classes
+#'   as columns, row must correspond to non-NA cells in "obs".
+#'
+#' @export
+#' @exportClass OrderedModelPred
+#' @rdname OrderedModelPred-class
+setClass("OrderedModelPred",
+         contains = c("Model",
+                      "CategoryLabel"),
+         slots = c(obs = "ObsLulcRasterStack",           
+                   ef = "ExpVarRasterList",
+                   time = "numeric",
+                   demand = "matrix",
+                   hist = "RasterLayerOrNULL",           
+                   mask = "RasterLayerOrNULL",           
+                   neighb = "NeighbRasterStackOrNULL",         
+                   rules = "matrixOrNULL",
+                   nb.rules = "numericOrNULL",
+                   order = "numeric",
+                   params = "list",
+                   predictions = "matrix"),
+         validity = function(object) {
+           ## TODO
+           ## check order only contains values in categories
+           return(TRUE)
+         }
+)         
