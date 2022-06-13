@@ -159,18 +159,18 @@ setMethod("allocate", signature(model = "OrderedModelPred"),
             if (!is.null(model@hist)) hist.vals <- raster::extract(model@hist, cells) else NULL
             if (!is.null(model@mask)) mask.vals <- raster::extract(model@mask, cells) else NULL
             newdata <- as.data.frame(x=model@ef, obs=model@obs, cells=cells)
-            prob <- model@predictions
+            prob <- model@prediction
             maps <- raster::stack(map0)
             
             for (i in 1:(nrow(model@demand) - 1)) {
               
               d <- model@demand[(i+1),]
               
-              ## 1. update land use suitability matrix if dynamic factors exist
-              if (model@ef@dynamic && i > 1) {
-                newdata <- .update.data.frame(x=newdata, y=model@ef, map=map0, cells=cells, timestep=(i-1))
-                prob <- predict(object=model@models, newdata=newdata)
-              }
+              # ## 1. update land use suitability matrix if dynamic factors exist
+              # if (model@ef@dynamic && i > 1) {
+              #   newdata <- .update.data.frame(x=newdata, y=model@ef, map=map0, cells=cells, timestep=(i-1))
+              #   prob <- predict(object=model@models, newdata=newdata)
+              # }
               tprob <- prob
               
               ## 2. implement neighbourhood decision rules

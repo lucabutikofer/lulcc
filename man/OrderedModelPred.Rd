@@ -12,6 +12,7 @@ OrderedModelPred(obs, ef, prediction, ...)
   obs,
   ef,
   time,
+  prediction,
   demand,
   hist,
   mask,
@@ -30,7 +31,8 @@ OrderedModelPred(obs, ef, prediction, ...)
 \item{ef}{an ExpVarRasterList object}
 
 \item{prediction}{model predictions as matrix, rows in the same order as
-non-NA cells in land-use raster. >> Change this to new class
+non-NA cells in land-use raster; colnames must correspond to "obs" categories.
+-->> Change this to new class
 PredLulcRasterStack.}
 
 \item{\dots}{additional arguments (none)}

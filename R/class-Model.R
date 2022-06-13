@@ -149,6 +149,7 @@ setClass("OrderedModelPred",
          slots = c(obs = "ObsLulcRasterStack",           
                    ef = "ExpVarRasterList",
                    time = "numeric",
+                   prediction = "matrix",
                    demand = "matrix",
                    hist = "RasterLayerOrNULL",           
                    mask = "RasterLayerOrNULL",           
@@ -156,8 +157,7 @@ setClass("OrderedModelPred",
                    rules = "matrixOrNULL",
                    nb.rules = "numericOrNULL",
                    order = "numeric",
-                   params = "list",
-                   predictions = "matrix"),
+                   params = "list"),
          validity = function(object) {
            ## TODO
            ## check order only contains values in categories

@@ -304,7 +304,8 @@ setMethod("OrderedModel", signature(obs = "ObsLulcRasterStack", ef = "ExpVarRast
 #' @param time numeric vector containing timesteps over which simulation will
 #'   occur  
 #' @param prediction model predictions as matrix, rows in the same order as
-#'   non-NA cells in land-use raster. >> Change this to new class
+#'   non-NA cells in land-use raster; colnames must correspond to "obs" categories.
+#'   -->> Change this to new class
 #'   PredLulcRasterStack.
 #' @param demand matrix with demand for each land use category in terms of number
 #'   of cells to be allocated. The first row should be the number of cells
@@ -345,12 +346,7 @@ setGeneric("OrderedModelPred", function(obs, ef, prediction, ...)
 #' @rdname OrderedModelPred
 #' @aliases OrderedModelPred,ObsLulcRasterStack,ExpVarRasterList,PredictiveModelList-method
 setMethod("OrderedModelPred", signature(obs = "ObsLulcRasterStack", ef = "ExpVarRasterList"),
-          function(obs, ef, time, demand, hist, mask, neighb=NULL, rules=NULL, nb.rules=NULL, order, params, output=NULL, ...) {
-            
-            ## check x and models refer to the same categories
-            if (!all(obs@categories == models@categories)) {
-              stop("'models' does not correspond with land use categories in 'obs'")
-            }
+          function(obs, ef, time, prediction, demand, hist, mask, neighb=NULL, rules=NULL, nb.rules=NULL, order, params, output=NULL, ...) {
             
             ## check dimensions of demand and time
             if (ncol(demand) != length(obs@categories)) {
@@ -408,7 +404,7 @@ setMethod("OrderedModelPred", signature(obs = "ObsLulcRasterStack", ef = "ExpVar
               params <- .checkOrderedParams(params)
             }
             
-            out <- new("OrderedModelPred", obs=obs, ef=ef, models=models, time=time, demand=demand, hist=hist, mask=mask, neighb=neighb, rules=rules, nb.rules=nb.rules, order=order, params=params, categories=obs@categories, labels=obs@labels, output=output)
+            out <- new("OrderedModelPred", obs=obs, ef=ef, prediction=prediction, time=time, demand=demand, hist=hist, mask=mask, neighb=neighb, rules=rules, nb.rules=nb.rules, order=order, params=params, categories=obs@categories, labels=obs@labels, output=output)
             
           }
 )
